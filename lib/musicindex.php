@@ -1,6 +1,7 @@
 <?php
     require_once ('config.php');
     require_once ('lib/id3.php');
+    require_once ('lib/constants.php');
     
     function getDirListRecursive($directory) {
 		$array_items = array();
@@ -22,11 +23,26 @@
 	}
     function getAllMp3s(){
         $files=getDirListRecursive(MUSIC_DIR);
-        $id3=array(); 
-        for($i=0;$i<count($files)-1;$i++){
-            $id3[]=read_id3($files[$i]); 
-        }
-        return array_slice(array_filter($id3,function($v){return isset($v['filename']);}),0);
+        $id3=getId3s($files);
+        return array_slice(array_filter($id3,function($v){return isset($v['filename']) && !empty($v['filename']);}),0);
     }
+    function getId3s($files){
+		$id3=new ID3('');
+		$info=array();
+		for($i=0;$i<count($files)-1;$i++){
+			$id3->setFilename($files[$i]);
+            $obj=array();
+            $obj[ID3_ARTIST]=stripBinaryShit($id3->getArtist());
+            $obj[ID3_TITLE]=stripBinaryShit($id3->getTitle());
+            $obj[ID3_ALBUM]=stripBinaryShit($id3->getAlbum());
+            $obj[FILENAME]=$files[$i];
+            $info[]=$obj;
+        }
+        return $info;
+	}
+	
+	function stripBinaryShit($string){
+		return preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $string);
+	}
 
 ?>
